@@ -56,7 +56,7 @@ if (select(2, UnitClass('player')) == 'WARLOCK') then
 
         -- Resources
         addResource( "mana", SPELL_POWER_MANA )
-        addResource( "soul_shards", SPELL_POWER_SOUL_SHARDS, true )   
+        addResource( "soul_shard", SPELL_POWER_SOUL_SHARDS, true )   
      
         state.seeds_of_corruption = setmetatable( {}, {
             __index = function( t, k, v )
@@ -66,7 +66,7 @@ if (select(2, UnitClass('player')) == 'WARLOCK') then
                 end
             end } )
             
-        registerCustomVariable( 'soul_shards', 
+        registerCustomVariable( 'soul_shard', 
             setmetatable( {
                 actual = nil,
                 max = 5,
@@ -91,7 +91,7 @@ if (select(2, UnitClass('player')) == 'WARLOCK') then
         addHook( 'timeToReady', function( wait, action )
             local ability = action and class.abilities[ action ]
 
-            if ability and ability.spend_type == "soul_shards" and ability.spend > state.soul_shards.current then
+            if ability and ability.spend_type == "soul_shard" and ability.spend > state.soul_shard.current then
                 wait = 3600
             end
 
@@ -225,7 +225,7 @@ if (select(2, UnitClass('player')) == 'WARLOCK') then
             [233499] = true
         }
 
-        registerCustomVariable( 'unstable_afflictions', 
+        registerCustomVariable( 'active_uas', 
             setmetatable( {
                 apps = { {}, {}, {}, {}, {} }
             }, { __index = function( t, k )
@@ -247,7 +247,7 @@ if (select(2, UnitClass('player')) == 'WARLOCK') then
 
         addHook( 'reset_precast', function ()
 
-            local apps = state.unstable_afflictions.apps
+            local apps = state.active_uas.apps
 
             for i, app in ipairs( apps ) do
                 app.start = 0
@@ -274,12 +274,12 @@ if (select(2, UnitClass('player')) == 'WARLOCK') then
                 table.sort( apps, s )
             end
 
-            state.soul_shards.actual = nil
+            state.soul_shard.actual = nil
 
         end )
 
         function state.applyUnstableAffliction( duration )
-            local uas = state.unstable_afflictions
+            local uas = state.active_uas
 
             if state.debuff.unstable_affliction.down then
                 state.applyDebuff( 'target', 'unstable_affliction', 6 * state.haste )
@@ -487,7 +487,7 @@ if (select(2, UnitClass('player')) == 'WARLOCK') then
 
         addAbility( "drain_soul", {
             id = 198590,
-            spend = 0,
+            spend = 33000,
             min_cost = 0,
             spend_type = "mana",
             cast = 1.5,
@@ -609,7 +609,7 @@ if (select(2, UnitClass('player')) == 'WARLOCK') then
 
         addHandler( "life_tap", function ()
             gain( mana.max * 0.3, "mana" )
-            gain( health.max * -0.1, "health" )
+            --gain( health.max * -0.1, "health" )
             if talent.empowered_life_tap.enabled then applyBuff( "empowered_life_tap", 20 + buff.empowered_life_tap.remains ) end
         end )
 
@@ -679,7 +679,7 @@ if (select(2, UnitClass('player')) == 'WARLOCK') then
             id = 27243,
             spend = 1,
             min_cost = 1,
-            spend_type = "soul_shards",
+            spend_type = "soul_shard",
             cast = 2.5,
             gcdType = "spell",
             cooldown = 0,
@@ -764,7 +764,7 @@ if (select(2, UnitClass('player')) == 'WARLOCK') then
             id = 157757,
             spend = 1,
             min_cost = 1,
-            spend_type = "soul_shards",
+            spend_type = "soul_shard",
             cast = 2.5,
             gcdType = "spell",
             cooldown = 0,
@@ -786,7 +786,7 @@ if (select(2, UnitClass('player')) == 'WARLOCK') then
             id = 157898,
             spend = 1,
             min_cost = 1,
-            spend_type = "soul_shards",
+            spend_type = "soul_shard",
             cast = 2.202,
             gcdType = "spell",
             cooldown = 0,
@@ -846,7 +846,7 @@ if (select(2, UnitClass('player')) == 'WARLOCK') then
             id = 30108,
             spend = 1,
             min_cost = 1,
-            spend_type = "soul_shards",
+            spend_type = "soul_shard",
             cast = 1.5,
             gcdType = "spell",
             cooldown = 0,
@@ -870,5 +870,10 @@ if (select(2, UnitClass('player')) == 'WARLOCK') then
 
     storeDefault( [[Affliction AOE]], 'displays', 20170518.231039, [[dOJ2gaGEjvVeHQDjjPETKuZusXSPQBse62QOhdv7Ks7vSBc7Ne9tfAyQWVv1HLAOe1GjHHJuhKKMgrWXOIJtKSqfzPePwmQA5s8qjXtbltr55umrfvMkuMmPy6kDrfCvIixgY1r0gjL2QIQyZQ02rsFusPNHqXNrW3PsJusItJYOrLXJqojsClekDnIOopPABkQsRvss(MIQ64eSa4n9YEH2xSWQ7rbgLewnuSdbWB6L9cTVybwDuSoZcuAbbufoeE1zkGuKisKQNrqCIeBa8a6J3RbTvA6L9ctShbiA8EnOTstVSxyI9iaDHD2fDk4Vay1rXkHJaNmH6qSetaPirKinvA6L9ctMcOpEVg0I1fcO1e7rad37cUSfNtDi8bmCVRk5(HpGH7Dbx2IZPsUFMcSDHaAvf4CFjW0ig2OeLMsTvblarJ3RbTeFYeRta9X71GwIpzILyDcy4ExSUqaTMmfOAEvbo3xcGnklnLARcwaMqddV3VOkW5(saPPuBvWcG30l7fQcCUVeyAedBuIbQ806kvG9buVxpdFzVqPc1XHagU3fWYuaPirKO5yfe(YEraPPuBvWciipPG)ctSsiGHg59A9THRY7)sWc0X6eGpwNaeI1jqjwNSbmCVBLMEzVWe(aenEVg0Qsw6ypc0KLgtNgfGN8EdC2ePsUFShb49S61R1)UQEF4d0EAUg4ExzQdX6eO90CDL)KVxzQdX6eyo0Tj9BMc0E3w3itvotbOYmmEMNT6y60Oa8bWB6L9cvpJGiqLbl2G0b0Wm0(whtNgfapqPfeqy60OanpZZw9anzPLitGYuGQ51(Ify1rX6mlq7P5ASUqaTYuLJ1jqb5duzWIniDadnY716Bdx4d0EAUgRleqRm1HyDcifjIePHIqddV3VyYuaGgHZApREVSxe7S5vYbS9jkG696z4l7fkvOooey7cb0Q9flS6EuGrjHvdf7qGtMqLC)ypcunV2xSWQ7rbgLewnuSdb0JLyN5CeO90CTQ3T1nYuLJ1jad)fv1)NX6i5a0f2zx01(Ify1rX6mlaDbH)N89Qkxta171ZWx2luQyo0Tj9Rsfa7Ssag(la6gNjieRKdC2ePoe7rG7l2aYykvaTWOuHTlL3nW2fcOvM6q4difjIePHc(lawDuSs4iGH7DLPkNPa8Ew9616F3WhGOX71Gwkcnm8E)Ij2Ja6J3RbTueAy49(ftShb2UqaTAFXgqgtPcOfgLkSDP8UbiA8EnOfRleqRj2JagU3LIqddV3VyYuad37QswAkI7h(aT3T1nYuhYuad37ktDitbmCVR6q4dG)N89ktvo8bAYsd0iVNYCXEeOjlTQaN7lbMgXWgLyndAXcifjdV65HzGv3JcWh4KjaSypcSDHaA1(Ify1rX6mlqtwAkI7JPtJcWtEVbWB6L9cTVydiJPub0cJsf2UuE3aTNMRR8N89ktvowNadIM3J0KPag2jThPooe7Sa6J3RbTQKLo2JavZR9fBazmLkGwyuQW2LY7gO90CTQ3T1nYuhI1jW2fcOvMQC4dG)N89ktDi8bmCVlXr68mHgMGGjtbKg5rTbf7SdN5FizNzv9mIXz(hsiWzteGfRtG2tZ1a37ktvowNasrIirA0(Ify1rX6mlarXEeqksejsdXNmzkGg0Tj9RQCnbuVxpdFzVqPI5q3M0VkvaSZkbAYsljbBdq7BDujBca]] )
 
+    storeDefault( [[Test Affliction: Primary]], 'displays', 20170518.231039, [[d0J2gaGEfYlbjTlIK61sQAMskDyPMnvDCuu3KiXZisYTbXZPyNsSxXUjz)Gs)ufgMI63aNgvdLugmi1WrPdsOVPI4yKQZrLKfQGLsLyXe1YP0dvr9uOLrLADuj1evOYur0KrIPR0fvKRII4YQ66iSrIyRkuLnRsBhj9rjfFgunnqIVljJefPXPqz0emEqXjrHBPI01Ku58uXJrQ1QqvTnIuh9qgKUzxoqjbOwCD8FWdMqwlJYuWTTW)vJQwKdABf8)SWtxFgcYmXt8IEoCfKxTbPd6CCVMFp3SlhOmPmheMJ71875MD5aLjL5GSwoK26WGgOq(OpfOmhecxjoLIufKzIN4PCUzxoqzYqqNJ718lzBH)RjL5GgbqfwXxAbXPme0iaQejwqgccPHbjtrp42w4)kQOfa2GdhKKhsXfg1WuYGorYPJndLXMh7exj9Sun2j1v3y5EkuKoimrYPsl9jU111D1jU1D7wA3sN7P1nh0iaQiBl8Fnziy9YIkAbGni5HMlmQHPKb5kkC6EbwrfTaWg0fg1WuYG0n7YbkrfTaWgC4GK8qkbr2NM3E(OE5avkULUUGgbqfsMHGmt8e)442NE5avqxyudtjdQiGWGgOmPmwqd779s8Tr4mWdSHmyNIEq5u0dcpf9G2u0Zg0iaQo3SlhOmroimh3R5xrcBNYCWMW2KoSFqzI7niKggrIfKYCqzpF0OA8GkrVpYbBpRqJcGknQtPOhS9Sc9zae5E1OoLIEWX93MWVroy7RAhJgvTmeKk3WL5E(6q6W(bLds3SlhOe9C4QGNNkKtUeKc3W6Bhsh2piLG2wb)jDy)GTm3ZxNGnHTLcx9ziy9YsaQf5J(u0DhS9ScnzBH)RgvTu0dAFFWZtfYjxcAyFVxIVncroy7zfAY2c)xnQtPOhKzIN4PWqrHt3lWAYqWsd5ds(MfwOfVxpNE5aLRHfAnlhsBDcUTf(VsaQfxh)h8GjK1YOmfecxjsSGuMdwVSeGAX1X)bpyczTmktbzM4jEkmObkKp6tbkZbBpRql6RAhJgvTu0dcZX9A(fQdMu0dYA5qARJeGAr(OpfD3bzTpnaICVIA1gK8nlSqlEVEo9Ybkxdl0u(Bt43GCAGA8baiPOxxqinmItPmh8cuBqrlV9WcDPTwqvWTTW)vJ6uKdYPbkKTP5k4PuxqJaOsJQwgck75JgvJhuf5GWCCVMFzOOWP7fynPmh054En)YqrHt3lWAszo42w4)kbO2GIwE7Hf6sBTGQGWCCVMFjBl8FnPmh0iaQyOOWP7fynziOraujsyBgQliYbBFv7y0OoLHGgbqLg1Pme0iaQeNYqqAae5E1OQf5GnHTfv0caBWHdsYdPu7KeYGnHTr237zmUuMdYmbNU(XJBW1X)b7Gq4kKmL5GBBH)ReGAr(OpfD3bBcBZqDbKoSFqzI7niDZUCGscqTbfT82dl0L2AbvbBpRqFgarUxnQAPOhCs1Y(NsgcA4qy9V4XukUd6CCVMFfjSDkZbRxwcqTbfT82hS9ScTOVQDmAuNsrpiDZUCGscqTiF0NIU7G0aiY9QrDkYbncGkO(oYCffUcUjdbD59FB(GUN1pz2vZqrQ1dAeavyfFPfejwqgc2EwHgfavAu1srpiZepXtrcqTiF0NIU7Goh3R5xOoys5u9Gmt8epfOoyYqqk)Tj8ROwTbjFZcl0I3RNtVCGY1WcnL)2e(nytyBMO4BqwF782Sja]] )
+
+    storeDefault( [[Test Affliction: default]], 'actionLists', 20170518.231039, [[dOIdbaGEHODjG2Mk0SvCtb42qStjTxYUrA)qAyq1Vr1GHYWvjhuuDmv5Cculuq1svPwSiTCr5HcKNcwMk65smvv1Kr00P6IcPlt56QGnJW0ecFteEmkhwPtkioTuxtq58csFwO8xr06eQwp9feLUPJrQub1fXe8TIJILtqmnZBonokgPrShgxWTn2wmvpXFjWdgpIaFcawwF5ceKZ8Mtl6R6tFbrPB6yKkCb1fXee0odkgsmbalRVCbcUTX2IP6j(lXdxqEApThQa2otYL5nNMC6Il42k8dzmROVCbHqjB268mbuo1eeaNSUiMGVvCuSCcIPzEZPXrXqIjxUa4Yy9oDKR3CQQNhdtUe]] )
+
+    storeDefault( [[Test Affliction: mg]], 'actionLists', 20170518.231039, [[d0J0haGEuvQ2eHSlfTnrvTpQOMPOkz2OmFi13OQ6XeDBr5Wc7ub7fz3kTFsYOuOggenouvk3JKQoTKbtLmCsCqQkNsHCmQY5qvjwivOLsOwmuTCrwhQkQvHQISmuLNRQjIQsAQqYKvPPt5IeuVIKsxgCDOCiQi)vfBgv2ovQNk18qv10iiFNKINbbFManAc44IQ4KubxLKkxtu58qOvkQs9Bs9AuvyYJqrTWBGZGlHt9qKbuJcEtLlFCCSsALE5ZQCLji1Ibgepqd8q65hjFbPqtpQBzQumQP2N0k9(ekAWJqrTWBGZGl5i1Tmvkg1JDYcgS281Q5ycaNhG7pHnWzWfn6qALB4alKvWZpcJefsRCdhyHScE(ZjASfjbbBAvgCm95wa)iGenALe4(iO8o9My7BbodobhhRKwPxrVgJDEbI0DkXsjynNvVqIgd5bRuuG70dbEcLZpA04yCCZqALB4Gf)8TqYh8ZB0iQhImGA1TVf4mqLlFCCSsALEv5siQ9HxSYqKAS9TaNbNGJJvsR0l1IHxJLKWtOiJAXadIhObEi987HKAh2BjdtNOE1lqgnWJqrTWBGZGl5i1drgqT623cCgOYLpoowjTsVQCHa1IHxJLKWtOiJAF4fRmePgBFlWzWj44yL0k9sTd7TKHPtuV6fOwmWG4bAGhsp)EiPULPsXOEStwWG1MVwnhta48aC)jSbodUOrhsRCdhyHScE(ryKOqALB4alKvWZForJFng78ceP7uILsWAoREHqJEmKhSsrbUtpe4juo)IEng78ceP7uILsWAQp3OrKrdiqOOw4nWzWLCK6wMkfJANG8GvkkWD6HapHY5xKtkjW9rq5DIWeBFlWzWj44yL0k9k6QTziOErCMGSO23zz82XQmGpXtT5pZjA8vBtPoLWuSsVZeKf1(olJ3owLbQn)zo0OTGbRnd8xZWm4i1PeMIv6DcBGZG7irJDYcgS28lfb07HvCWe2aNbx0OVAB(LIa69WkoyMGSO23zz82XQmqT5pZnI6HidOwD7Bbodu5YhhhRKwPxvU4rTp8IvgIuJTVf4m4eCCSsALEPwm8ASKeEcfzulgyq8anWdPNFpKu7WElzy6e1REbYObHiuul8g4m4sosDltLIr9yNSGbRnFTAoMaW5b4(tydCgCrJoKw5goWczf88JWirH0k3WbwiRGN)CIG8GvkkWD6HapHY5x04qALB4Gf)8TqYhQhjA0oPKa3hbL3jctS9TaNbNGJJvsR0RiLe4(iO8o9My7BbodobhhRKwP3rIUABgcQxeNjilQ9DwgVDSkduB(ZCupeza1QBFlWzGkx(44yL0k9sTp8IvgIuJTVf4m4eCCSsALEP2H9wYW0jQx9culgyq8anWdPNFpKulgEnwscpHImYOHCekQfEdCgCjhPEiYaQfdHIkxTgJ9ulgEnwscpHImQ9HxSYqK6eekNxJXEQDyVLmmDI6vVa1Ibgepqd8q653dj1Tmvkg1oHJXXnVqCvtT3JarYn8gKMjilQ9fnoKw5goyXpFlK8HZEOrpwjbUpckVtVj2(wGZGtWXXkPv6veogh300Pmyn4EEng7NjiKMZEJgrgnKpHIAH3aNbxYrQhImG68Q4avUqfkQCXJAXWRXss4juKrTp8IvgIuZko4yHc1oS3sgMor9QxGAXadIhObEi987HK6wMkfJ6SyJPI0u5IFvU8qQkVjJg8tOOw4nWzWLCK6HidOMVMIAv5Q1ymQfdVgljHNqrg1(Wlwzis9nf1EEngJAh2BjdtNOwgReyulgyq8anWdPNFpKu3YuPyutgnW3iuul8g4m4sosDltLIrn1drgqDEvCGkxOcfQ9HxSYqKAwXbhluOwm8ASKeEcfzulgyq8anWdPNFpKu7WElzy6e1REbYiJ6wbKvWk(EyLEPbE5NJmIa]] )
 
 end
