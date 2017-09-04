@@ -20,8 +20,10 @@ Classes\DeathKnight.lua
 Classes\DemonHunter.lua
 Classes\Druid.lua
 Classes\Hunter.lua
+Classes\Mage.lua
 Classes\Monk.lua
 Classes\Paladin.lua
+Classes\Priest.lua
 Classes\Shaman.lua
 Classes\Warlock.lua
 Classes\Warrior.lua
