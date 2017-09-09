@@ -167,6 +167,20 @@ if select(2, UnitClass('player')) == 'PRIEST' then
             end
         })
 
+        modifyAbility("void_bolt", "cooldown", function(x)
+            return x * spell_haste
+        end)
+        
+        addHandler('void_bolt', function()
+            gain(15, 'insanity')
+            if debuff.shadow_word_pain.up then
+                applyDebuff('target', 'shadow_word_pain', debuff.shadow_word_pain.remains + 3.0)
+            end
+            if debuff.vampiric_touch.up then
+                applyDebuff('target', 'vampiric_touch', debuff.vampiric_touch.remains + 3.0)
+            end
+        end)
+
         addAbility('void_torrent', {
             id = 205065,
             spend_type = 'mana',
@@ -312,10 +326,7 @@ if select(2, UnitClass('player')) == 'PRIEST' then
             return x * spell_haste
         end)
         
-        modifyAbility("void_bolt", "cooldown", function(x)
-            return x * spell_haste
-        end)
-        
+
         registerCustomVariable('mind_flay_starts', 0)
         registerCustomVariable('mind_flay_ends', 0)
         registerCustomVariable('shadowform_toggle', 0)
@@ -345,10 +356,6 @@ if select(2, UnitClass('player')) == 'PRIEST' then
         end)
 
         addHandler('shadow_crash', function()
-            gain(15, 'insanity')
-        end)
-
-        addHandler('void_bolt', function()
             gain(15, 'insanity')
         end)
 
