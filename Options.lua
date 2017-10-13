@@ -224,6 +224,23 @@ local oneTimeFixes = {
         end
     end,
 
+    disableTrinketsForMonks_10102017 = function( profile )
+        if state.class.file == "MONK" then
+            profile.trinkets = profile.trinkets or {}
+            profile.trinkets.vial_of_ceaseless_toxins = profile.trinkets.vial_of_ceaseless_toxins or {}
+            profile.trinkets.vial_of_ceaseless_toxins.disabled = true
+            profile.trinkets.umbral_moonglaives = profile.trinkets.umbral_moonglaives or {}
+            profile.trinkets.umbral_moonglaives.disabled = true
+        end
+    end,
+
+    disableSpecterForPaladins_10102017 = function( profile )
+        if state.class.file == "PALADIN" then
+            profile.trinkets = profile.trinkets or {}
+            profile.trinkets.specter_of_betrayal = profile.trinkets.specter_of_betrayal or {}
+            profile.trinkets.specter_of_betrayal.disabled = true
+        end
+    end,
 }
 
 
