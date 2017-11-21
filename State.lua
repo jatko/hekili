@@ -870,9 +870,9 @@ local function gain( amount, resource, overcap )
     if overcap then state[ resource ].actual = state[ resource ].current + amount
     else state[ resource ].actual = min( state[ resource ].max, state[ resource ].current + amount ) end
 
-    ns.callHook( 'gain', amount, resource, overcap )
-
     if amount ~= 0 and resource ~= "health" then forecastResources( resource ) end
+
+    ns.callHook( 'gain', amount, resource, overcap )
 
 end
 state.gain = gain
@@ -882,10 +882,10 @@ local function spend( amount, resource )
     
     -- 080217:  Update actual value to reflect current value + change, this means the forecasted values are used (and then need updated).
     state[ resource ].actual = max( 0, state[ resource ].actual - amount )
+    if amount ~= 0 and resource ~= "health" then forecastResources( resource ) end    
+    
     ns.callHook( 'spend', amount, resource )
 
-    if amount ~= 0 then forecastResources( resource ) end    
-    
 end
 state.spend = spend
 
@@ -974,7 +974,7 @@ local mt_state = {
             
         elseif k == 'time' then
             -- Calculate time in combat.
-            if t.combat == 0 and t.false_start == 0 then return 0
+            if t.combat == 0 and t.false_start == 0 then return ( class.abilities[ t.this_action ].passive and 0 or t.offset )
             else return t.now + ( t.offset or 0 ) - ( t.combat > 0 and t.combat or t.false_start ) + ( ( t.combat > 0 or t.false_start ) and t.delay or 0 ) end
             
         elseif k == 'time_to_die' then
@@ -1050,10 +1050,14 @@ local mt_state = {
         elseif k == 'cooldown' then return 0
             
         elseif k == 'duration' then
-            return ( class.auras[ t.this_action ].duration )
+            local a = class.abilities[ t.this_action ].aura or t.this_action
+
+            return ( class.auras[ a ].duration )
             
         elseif k == 'refreshable' then
-            return t.dot[ t.this_action ].remains < 0.3 * class.auras[ t.this_action ].duration
+            local a = class.abilities[ t.this_action ].aura or t.this_action
+
+            return t.dot[ a ].remains < 0.3 * class.auras[ a ].duration
             
         elseif k == 'ticking' then
             local a = class.abilities[ t.this_action ].aura or t.this_action
@@ -2471,7 +2475,7 @@ ns.metatables.mt_perks = mt_perks
 local mt_active_dot = {
     __index = function(t, k)
         if class.auras[ k ] then
-            t[k] = ns.numDebuffs( class.auras[ k ].name )
+            t[k] = ns.numDebuffs( class.auras[ k ].id )
             return t[k]
             
         else
@@ -2693,7 +2697,7 @@ local mt_default_debuff = {
 
         elseif k == 'pmultiplier' then
             -- Persistent modifier, used by Druids.
-            return ns.getModifier( class_aura.name, state.target.unit )
+            return ns.getModifier( class_aura.id, state.target.unit )
             
         elseif k == 'ticking' then
             return t.up
@@ -2787,6 +2791,9 @@ local mt_default_action = {
             
         elseif k == 'max_charges' then
             return class.abilities[ t.action ].charges or 0
+
+        elseif k == 'time_to_max_charges' then
+            return ( class.abilities[ t.action ].charges - state.cooldown[ t.action ].charges_fractional ) * class.abilities[ t.action ].recharge
             
         elseif k == 'ready_time' then
             return ns.isUsable( t.action ) and ns.timeToReady( t.action ) or 999
@@ -2947,13 +2954,31 @@ setmetatable( state.totem, mt_totem )
 
 
 -- 04072017: Let's go ahead and cache aura information to reduce overhead.
-    local autoAuraKey = setmetatable( {}, {
+local autoAuraKey = setmetatable( {}, {
     __index = function( t, k )
-        local name = GetSpellInfo( k )
+        local aura_name = GetSpellInfo( k )
         
-        if not name then return end
-        
-        local key = formatKey( name )
+        if not aura_name then return end
+
+        local name
+
+        if class.auras[ aura_name ] then
+            local i = 1
+
+            while( true ) do
+                local new = aura_name .. ' ' .. i
+
+                if not class.auras[ new ] then
+                    name = new
+                    break
+                end
+
+                i = i + 1
+            end
+        end
+        name = name or aura_name
+
+        local key = formatKey( aura_name )
         
         if class.auras[ key ] then
             local i = 1
@@ -2969,7 +2994,7 @@ setmetatable( state.totem, mt_totem )
                 i = i + 1
             end
         end
-        
+
         -- Store the aura and save the key if we can.
         if ns.addAura then
             ns.addAura( key, k, 'name', name )
@@ -2999,7 +3024,6 @@ local function scrapeUnitAuras( unit )
         v.unit = unit
     end
     
-    
     for k,v in pairs( db.debuff ) do
         v.name = nil
         v.count = 0
@@ -3022,7 +3046,7 @@ local function scrapeUnitAuras( unit )
         if not name then break end
         
         local key = class.auras[ spellID ] and class.auras[ spellID ].key
-        if not key then key = class.auras[ name ] and class.auras[ name ].key end
+        -- if not key then key = class.auras[ name ] and class.auras[ name ].key end
         if not key then key = autoAuraKey[ spellID ] end
         
         if key then 
@@ -3059,7 +3083,7 @@ local function scrapeUnitAuras( unit )
         if not name then break end
         
         local key = class.auras[ spellID ] and class.auras[ spellID ].key
-        if not key then key = class.auras[ name ] and class.auras[ name ].key end
+        -- if not key then key = class.auras[ name ] and class.auras[ name ].key end
         if not key then key = autoAuraKey[ spellID ] end
         
         if key then 
@@ -3340,7 +3364,7 @@ function state.reset( dispID )
     
     for k, v in pairs( state.debuff ) do
         for attr in pairs( default_debuff_values ) do
-            v[ attr ] = nil
+            v[ attr ] = nil            
         end
     end
     
@@ -3635,7 +3659,7 @@ ns.spendResources = function( ability )
         if cost > 0 and cost < 1 then
             cost = ( cost * state[ resource ].max )
         end
-        
+
         if cost ~= 0 then
             state.spend( cost, resource )            
         end
@@ -3690,8 +3714,6 @@ ns.isKnown = function( sID )
     return ( ability.item and true ) or IsPlayerSpell( sID ) or IsSpellKnown( sID ) or IsSpellKnown( sID, true )
     
 end
-_G.isKnown = ns.isKnown
-
 
 
 -- Filter out non-resource driven issues with abilities.
@@ -3710,6 +3732,10 @@ ns.isUsable = function( spell )
     end
 
     if ability.toggle and not state.toggle[ ability.toggle ] then
+        return false
+    end
+
+    if ability.form and not state.buff[ ability.form ].up then
         return false
     end
     

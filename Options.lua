@@ -35,7 +35,8 @@ function Hekili:GetDefaults()
             Legion = true,
             Enabled = true,
             Locked = true,
-            MinimapIcon = false, -- true == hide
+            MinimapIcon = false,
+            Artifact = true,
 
             ['Use Old Engine'] = false,
             
@@ -211,7 +212,7 @@ local oneTimeFixes = {
                     
                     local import = ns.deserializeActionList( default.import )
                     
-                    if import then
+                    if import and type( import ) ~= 'string' then
                         profile.actionLists[ index ] = import
                         profile.actionLists[ index ].Name = default.name
                         profile.actionLists[ index ].Release = default.version
@@ -241,6 +242,31 @@ local oneTimeFixes = {
             profile.trinkets.specter_of_betrayal.disabled = true
         end
     end,
+
+    changeSwipesToSwipe_11052017 = function( profile )
+        for listID, list in ipairs( profile.actionLists ) do
+            for entryID, entry in ipairs( list.Actions ) do
+                if entry.Ability == "swipe_bear" or entry.Ability == "swipe_cat" then entry.Ability = "swipe" end
+            end
+        end
+    end,
+
+    changeIncarnation_11052017 = function( profile )
+        for listID, list in ipairs( profile.actionLists ) do
+            for entryID, entry in ipairs( list.Actions ) do
+                if entry.Ability == "incarnation" then entry.Ability = "incarnation_king_of_the_jungle" end
+            end
+        end
+    end,
+
+    changeThrashCatToThrash_11062017 = function( profile )
+        for listID, list in ipairs( profile.actionLists ) do
+            for entryID, entry in ipairs( list.Actions ) do
+                if entry.Ability == "thrash_cat" or entry.Ability == "thrash_bear" then entry.Ability = "thrash" end
+            end
+        end
+    end,
+
 }
 
 
@@ -2829,7 +2855,7 @@ ns.newActionListOption = function( index )
                     
                     local import = ns.deserializeActionList( class.defaults[ defaultID ].import )
                     
-                    if not import then
+                    if not import or type( import ) == 'string' then
                         Hekili:Print("Unable to import " .. class.defaults[ defaultID ].name .. ".")
                         return
                     end
@@ -4796,7 +4822,7 @@ function Hekili:GetOptions()
                                     local import = ns.deserializeActionList( default.import )
                                     local index = #Hekili.DB.profile.actionLists + 1
                                     
-                                    if import then
+                                    if import and type( import ) ~= 'string' then
                                         Hekili.DB.profile.actionLists[ index ] = import
                                         Hekili.DB.profile.actionLists[ index ].Name = default.name
                                         Hekili.DB.profile.actionLists[ index ].Release = default.version
@@ -4832,7 +4858,7 @@ function Hekili:GetOptions()
                                     
                                     local import = ns.deserializeActionList( default.import )
                                     
-                                    if import then
+                                    if import and type( import ) ~= 'string' then
                                         Hekili.DB.profile.actionLists[ index ] = import
                                         Hekili.DB.profile.actionLists[ index ].Name = default.name
                                         Hekili.DB.profile.actionLists[ index ].Release = default.version
@@ -6253,7 +6279,7 @@ function Hekili:SetOption( info, input, ... )
             elseif option == 'Import Action List' then
                 local import = ns.deserializeActionList( input )
                 
-                if not import then
+                if not import or type( import ) == 'string' then
                     Hekili:Print("Unable to import from given input string.")
                     return
                 end
@@ -6302,7 +6328,7 @@ function Hekili:SetOption( info, input, ... )
                     
                     local import = ns.deserializeActionList( input )
                     
-                    if not import then
+                    if not import or type( import ) == 'string' then
                         Hekili:Print("Unable to import from given import string.")
                         return
                     end
@@ -7353,7 +7379,8 @@ local function sanitize( segment, i, line, warnings )
         i = i:gsub( '\a', token .. 'i_enabled' ) 
         i = i:gsub( '\v', token .. attr )
     end 
-    
+
+   
     if segment == 'c' then
         for token in i:gmatch( "target" ) do
             local times = 0
