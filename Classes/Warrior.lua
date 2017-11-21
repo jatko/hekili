@@ -847,6 +847,7 @@ if (select(2, UnitClass('player')) == 'WARRIOR') then
             min_range = 0,
             max_range = 0,
             spend_type = "rage",
+            usable = function() if talent.inner_rage.enabled then return true else return state.buff.enrage.up end end
         } )
 
         addHandler( "raging_blow", function ()
@@ -861,6 +862,14 @@ if (select(2, UnitClass('player')) == 'WARRIOR') then
             end
             gain( 5, 'rage' )
         end )
+
+        modifyAbility('raging_blown', 'cooldown', function()
+            if talent.inner_rage.enabled then
+                return 4.5 * haste
+            else
+                return 0
+            end
+        end)
 
         -- Rampage
         --[[ Enrages you and unleashes a series of 5 brutal strikes over 2 sec for a total of 24,668 Physical damage. ]]
