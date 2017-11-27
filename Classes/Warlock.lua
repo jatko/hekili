@@ -164,6 +164,22 @@ if (select(2, UnitClass('player')) == 'WARLOCK') then
         --[[ Writhe in Agony: Agony's damage may now ramp up twice as high. ]]
         addTalent( "writhe_in_agony", 196102 ) -- 22090
 
+        -- Demonology talents:
+        
+        addTalent( "shadowy_inspiration", 196269 )
+        addTalent( "shadowflame", 108501 )
+        addTalent( "demonic_calling", 205145 )
+        addTalent( "impending_doom", 196270 )
+        addTalent( "improved_dreastalkers", 196272 )
+        addTalent( "implosion", 196277 )
+        addTalent( "shadowfury", 30283 )
+        addTalent( "hand_of_doom", 196283 )
+        addTalent( "power_trip", 196605 )
+        addTalent( "grimoire_of_synergy", 171975 )
+        addTalent( "summon_darkglare", 205180 )
+        addTalent( "demonbolt", 157695 )
+        addTalent( "soul_conduit", 215941 )
+
 
         -- Traits
         addTrait( "compounding_horror", 199282 )
