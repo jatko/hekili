@@ -47,6 +47,16 @@ local storeDefault = ns.storeDefault
 
 local PTR = ns.PTR or false
 
+local function default_pet(state)
+    if state.spec.affliction then
+        return 'felhunter'
+    elseif state.spec.demonology then
+        return 'felguard'
+    else
+        return 'imp'
+    end
+end
+
 if (select(2, UnitClass('player')) == 'WARLOCK') then
 
     ns.initializeClassModule = function ()
@@ -206,6 +216,8 @@ if (select(2, UnitClass('player')) == 'WARLOCK') then
         addTrait( "winnowing", 238072 )
         addTrait( "wrath_of_consumption", 199472 )
 
+        addTrait( "thalkiels_ascendance", 238145 )
+
         -- Auras
         addAura( "agony", 980, "duration", 18, "tick_time", 2 )
             modifyAura( "agony", "tick_time", function( x )
@@ -240,6 +252,9 @@ if (select(2, UnitClass('player')) == 'WARLOCK') then
             class.auras[ 233498 ] = class.auras.unstable_affliction
             class.auras[ 233499 ] = class.auras.unstable_affliction
             -- May need to use similar logic to Bloodlust.
+
+        -- Demonology auras
+        addAura( "shadowy_inspiration", 196606, "duration", 15)
 
         local afflictions = {
             [233490] = true,
@@ -885,6 +900,120 @@ if (select(2, UnitClass('player')) == 'WARLOCK') then
             applyUnstableAffliction( 6 * haste )
             -- applyDebuff( "target", "unstable_affliction", 8 * haste, min( 5, debuff.unstable_affliction.stack + 1 ) )
         end )
+
+        addAbility( "shadow_bolt", {
+            id = 686,
+            spend = 0.06,
+            spend_type = "mana",
+            cast = 2,
+            gcdType = "spell",
+            cooldown = 0,
+            min_range = 0,
+            max_range = 40,
+            known = function() return not talent.demonbolt.enabled end
+        } )
+
+        addHandler( "shadow_bolt", function ()
+            gain(1, "soul_shard")
+            if buff.shadowy_inspiration.up then
+                removeBuff("shadowy_inspiration")
+            end
+        end )
+
+        modifyAbility( "shadow_bolt", "cast", function( x )
+            if buff.shadowy_inspiration.up then
+                return 0
+            end
+            return x * haste end)
+        
+        addAbility( "demonic_empowerment", {
+            id = 193396,
+            spend = 0.06,
+            spend_type = "mana",
+            cast = 1.5,
+            gcdType = "spell",
+            cooldown = 0
+        })
+
+        addHandler( "demonic_empowerment", function ()
+            if talent.shadowy_inspiration.enabled then
+                applyBuff("shadowy_inspiration", 15)
+            end
+        end )
+
+        addAbility( "demonbolt", {
+            id = 157695,
+            spend = 0.048,
+            spend_type = "mana",
+            cast = 2,
+            gcdType = "spell",
+            cooldown = 0,
+            min_range = 0,
+            max_range = 40,
+            talent = 'demonbolt'
+        } )
+
+        addHandler( "demonbolt", function ()
+            gain(1, "soul_shard")
+            if buff.shadowy_inspiration.up then
+                removeBuff("shadowy_inspiration")
+            end
+        end )
+
+        modifyAbility( "demonbolt", "cast", function( x )
+            if buff.shadowy_inspiration.up then
+                return 0
+            end
+            return x * haste end)
+
+        addAbility( "demonwrath", {
+            id = 193440,
+            spend = 0.025,
+            min_cost = 0,
+            spend_type = "mana",
+            cast = 3,
+            channeled = true,
+            gcdType = "spell",
+            cooldown = 0
+        } )
+
+        modifyAbility( "demonwrath", "cast", function( x )
+            return x * haste end)
+
+        addAbility( "call_dreadstalkers", {
+            id = 104316,
+            spend = 2,
+            min_cost = 2,
+            spend_type = "soul_shard",
+            cast = 2,
+            cooldown = 15,
+            gcdType = "spell",
+            cooldown = 0
+        } )
+
+        modifyAbility( "call_dreadstalkers", "cast", function( x )
+            return x * haste end)
+
+        addHandler( "call_dreadstalkers", function ()
+            summon_pet(state, 'dreadstalker')
+            summon_pet(state, 'dreadstalker')
+        end)
+
+        addAbility( "service_pet", {
+            id = 111898, -- defaults to felguard, needs to be generalized
+            spend = 1,
+            min_cost = 1,
+            spend_type = "soul_shard",
+            cast = 0,
+            cooldown = 90,
+            gcdType = "off",
+            toggle = 'cooldowns',
+            talent = 'grimoire_of_service'
+        })
+
+        addHandler("service_pet", function ()
+            summon_pet(state, 'service')
+        end)
     end
 
 
