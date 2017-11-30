@@ -49,12 +49,50 @@ if select(2, UnitClass('player')) == 'MAGE' then
     local function MageInit()
         Hekili:Print("Initializing Mage Class Module.")
 
+        local function genericHasteMod( x )
+            return x * haste
+        end
+
         setClass('MAGE')
-        addResource('mana', true)
+        addResource('mana', SPELL_POWER_MANA, true)
+        addResource("arcane_charge", SPELL_POWER_ARCANE_CHARGES)   
+    
+        state.arcane_charge = setmetatable( {
+                actual = nil,
+                max = 4,
+                active_regen = 0,
+                inactive_regen = 0,
+                forecast = {},
+                times = {},
+                values = {},
+                fcount = 0,
+                regen = 0,
+                regenerates = false,
+            }, { __index = function( t, k )
+                if k == 'count' or k == 'current' then
+                    return t.actual
+
+                elseif k == 'actual' then
+                    t.actual = UnitPower( "player", SPELL_POWER_ARCANE_CHARGES)
+                    return t.actual
+                end
+            end } )
+
+        addMetaFunction('state', 'arcane_charge', function() return arcane_charge.current end)
+            
+        addHook('timeToReady', function(wait, action)
+            local ability = action and class.abilities[action]
+
+            if ability and ability.spend_type == "arcane_charge" and ability.spend > state.arcane_charge.current then
+                wait = 3600
+            end
+
+            return wait
+        end)
 
         setPotion( 'prolonged_power' )
 
-        -- Talents
+        -- Frost Talents
         addTalent('mirror_image', 55342)
         addTalent('ray_of_frost', 205021)
         addTalent('rune_of_power', 116011)
@@ -64,9 +102,7 @@ if select(2, UnitClass('player')) == 'MAGE' then
         addTalent('glacial_spike', 199786)
         addTalent('splitting_ice', 56377)
 
-        --addTalent('shadowy_inspiration', 196269)
-
-
+        -- Frost Auras
         addAura('fingers_of_frost', 44544, 'duration', 15, 'max_stack', 3)
         addAura('frozen_mass', 242253, 'duration', 10, 'max_stack', 1)
         addAura('brain_freeze', 190446, 'duration', 15, 'max_stack', 1)
@@ -76,6 +112,51 @@ if select(2, UnitClass('player')) == 'MAGE' then
         addAura('rune_of_power', 116014, 'duration', 10)
         addAura('zannesu_journey', 226852, 'duration', 30, 'max_stack', 5)
         addAura('icicles', 205473, 'duration', 60, 'max_stack', 5)
+
+        -- Arcane Talents
+        addTalent('arcane_familiar', 205022)
+        addTalent('amplification', 236628)
+        addTalent('words_of_power', 205035)
+        addTalent('shimmer', 212653)
+        addTalent('slipstream', 236457)
+        addTalent('mana_shield', 235463)
+        addTalent('incanters_flow', 1463)
+        addTalent('supernova', 157980)
+        addTalent('charged_up', 205032)
+        addTalent('resonance', 205028)
+        addTalent('chrono_shift', 235711)
+        addTalent('ring_of_frost', 113724)
+        addTalent('ice_ward', 205036)
+        addTalent('nether_tempest', 114923)
+        addTalent('unstable_magic', 157976)
+        addTalent('erosion', 205039)
+        addTalent('overpowered', 155147)
+        addTalent('temporal_flux', 234302)
+        addTalent('arcane_orb', 153626)
+
+        -- Arcane Traits
+        addTrait('mark_of_aluneth', 224968)
+        addTrait('might_of_the_guardians', 187318)
+        addTrait('blasting_rod', 187258)
+        addTrait('arcane_purification', 187313)
+        addTrait('ancient_power', 214917)
+        addTrait('force_barrier', 210716)
+        addTrait('aegwynns_imperative', 187264)
+        addTrait('aegwynns_fury', 187287)
+        addTrait('everywhere_at_once', 187301)
+        addTrait('rule_of_threes', 215463)
+        addTrait('aegwynns_ascendance', 187680)
+        addTrait('crackling_energy', 187310)
+        addTrait('touch_of_the_magi', 210725)
+        addTrait('ethereal_sensitivity', 187276)
+        addTrait('sloooow_down', 210730)
+        addTrait('torrential_barrage', 187304)
+        addTrait('arcane_rebound', 188006)
+        addTrait('aegwynns_wrath', 187321)
+        addTrait('intensity_of_the_tirisgarde', 241121)
+        addTrait('aegwynns_intensity', 238054)
+        addTrait('aluneths_avarice', 238090)
+        addTrait('time_and_space', 238126)
 
         addGearSet('zannesu_journey', 133970)
 
@@ -231,23 +312,17 @@ if select(2, UnitClass('player')) == 'MAGE' then
             talent = 'mirror_image'
         })
 
-        modifyAbility('ebonbolt', 'cast', function (x)
-            return x * haste
-        end)
+        modifyAbility('ebonbolt', 'cast', genericHasteMod)
 
-        modifyAbility('frostbolt', 'cast', function (x)
-            return x * haste
-        end)
+        modifyAbility('frostbolt', 'cast', genericHasteMod)
 
-        modifyAbility('water_jet', 'cast', function (x)
-            return x * haste
-        end)
+        modifyAbility('water_jet', 'cast', genericHasteMod)
 
         modifyAbility('flurry', 'cast', function (x)
             if state.buff.brain_freeze.up then
                 return 0.001
             else
-                return x * haste
+                return genericHasteMod(x)
             end
         end)
 
@@ -305,9 +380,317 @@ if select(2, UnitClass('player')) == 'MAGE' then
             end
         end)
 
-        --RegisterEvent("UNIT_SPELLCAST_START", function() print(state.palyer.lastgcd) end)
+        -- Arcane Auras
+        addAura('arcane_charge', -100, 'duration', 3600, 'max_stack', 4)
+        addAura('presence_of_mind', 205025, 'duration', 3600, 'max_stack', 2)
+        addAura('arcane_missiles', 79683, 'duration', 20, 'max_stack', 3)
+        addAura('evocation', 12051, 'duration', 6, 'max_stack', 1)
+        addAura('arcane_power', 12042, 'duration', 15, 'max_stack', 1)
+        addAura('mark_of_aluneth', 224968, 'duration', 6, 'max_stack', 1)
+        addAura('arcane_familiar', 210126, 'duration', 3600, 'max_stack', 1)
+        addAura('nether_tempest', 114923, 'duration', 12, 'max_stack', 1)
+
+        addMetaFunction('state', 'time_until_burn_internal', function()
+        end)
+
+        -- Arcane Abilities
+        local function gainArcaneCharge(state, n)
+            if n >= 0 then
+                n = max(0, min(n, 4 - state.arcane_charge.current))
+                state.gain(n, 'arcane_charge')
+            else
+                state.spend(-n, 'arcane_charge')
+            end
+            state.removeBuff('arcane_charge')
+            if state.arcane_charge.current > 0 then
+                state.applyBuff('arcane_charge', 3600, state.arcane_charge.current)
+            end
+        end
+
+        local function arcanePowerManaCost(state, x)
+            if state.buff.arcane_power.up then
+                local pct = 0.30
+                if state.talent.overpowered.enabled then
+                    pct = 0.60
+                end
+                return x * (1.0 - pct)
+            else
+                return x
+            end
+        end
+
+        local function arcaneChargeManaCost(state, pct, x)
+            if state.arcane_charge then
+                x = x + (x * pct * state.arcane_charge.current)
+            end
+            return arcanePowerManaCost(state, x)
+        end
+
+        addHook('reset_precast', function()
+            state.arcane_charge.actual = UnitPower("player", SPELL_POWER_ARCANE_CHARGES) 
+
+            gainArcaneCharge(state, 0)
+
+            return x           
+        end)
+            
+        addHook('reset_postcast', function(x)
+            return x
+        end)
+            
+        addHook('advance', function(dt)
+            if state.buff.evocation.up then
+                state.gain(state.mana.max / state.buff.evocation.duration * dt, 'mana')
+            end
+
+            return dt
+        end)
+
+        addAbility('arcane_barrage', {
+            id = 44425,
+            spend = 0.005,
+            spend_type = 'mana',
+            cast = 0,
+            gcdType = 'spell',
+            cooldown = 4.5
+        })
+
+        modifyAbility( 'arcane_barrage', 'cooldown', genericHasteMod )
+
+        modifyAbility( 'arcane_barrage', 'spend', function(x) return arcanePowerManaCost(state, x) end)
+        
+        addHandler('arcane_barrage', function()
+            gainArcaneCharge(state, -state.arcane_charge.current)
+        end)
+
+        addAbility('arcane_blast', {
+            id = 30451,
+            spend = 0.03,
+            spend_type = 'mana',
+            cast = 2.25,
+            gcdType = 'spell',
+            cooldown = 0
+        })
+
+        addHandler('arcane_blast', function()
+            gainArcaneCharge(state, 1)
+            state.removeStack('presence_of_mind')
+        end)
+
+        modifyAbility( 'arcane_blast', 'cast', function(x)
+            if state.buff.presence_of_mind.up then
+                x = 0
+            end
+            if state.talent.temporal_flux.enabled then
+                x = x * (1.0 - 0.05 * state.arcane_charge.current)
+            end
+            return genericHasteMod(x)
+        end)
+        
+        modifyAbility('arcane_blast', 'spend', function(x)
+            return arcaneChargeManaCost(state, 1.25, x)
+        end)
+
+        addAbility('presence_of_mind', {
+            id = 205025,
+            spend = 0,
+            spend_type = 'mana',
+            cast = 0,
+            gcdType = 'off',
+            toggle = 'cooldowns',
+            cooldown = 60
+        })
+
+        addHandler('presence_of_mind', function()
+            applyBuff('presence_of_mind', 3600, 2)
+        end)
+
+        addAbility('arcane_explosion', {
+            id = 1449,
+            spend = 0.02,
+            spend_type = 'mana',
+            cast = 0,
+            gcdType = 'spell',
+            cooldown = 0
+        })
+
+        addHandler('arcane_explosion', function()
+            gainArcaneCharge(state, 1)
+        end)
+        
+        modifyAbility('arcane_explosion', 'spend', function(x)
+            return arcaneChargeManaCost(state, 1.25, x)
+        end)
+
+        addAbility('arcane_missiles', {
+            id = 5143,
+            spend = 0,
+            spend_type = 'mana',
+            cast = 2,
+            channeled = true,
+            gcdType = 'spell',
+            cooldown = 0,
+            buff = 'arcane_missiles'
+        })
+
+        addHandler('arcane_missiles', function()
+            gainArcaneCharge(state, 1)
+            removeStack('arcane_missiles')
+        end)
+        
+        addAbility('evocation', {
+            id = 12051,
+            spend = 0,
+            spend_type = 'mana',
+            cast = 6,
+            channeled = true,
+            gcdType = 'spell',
+            cooldown = 90,
+            toggle = 'cooldowns'
+        })
+
+        modifyAbility('evocation', 'cast', genericHasteMod)
+        
+        addHandler('evocation', function()
+            applyBuff('evocation', 6 * state.haste)
+        end)
+        
+        addAbility('arcane_power', {
+            id = 12042,
+            spend = 0,
+            spend_type = 'mana',
+            gcdType = 'off',
+            cast = 0,
+            cooldown = 90,
+            toggle = 'cooldowns'
+        })
+
+        addHandler('arcane_power', function()
+            applyBuff('arcane_power', 15)
+        end)
+ 
+        addAbility('mark_of_aluneth', {
+            id = 224968,
+            spend = 0,
+            spend_type = 'mana',
+            gcdType = 'spell',
+            cast = 2,
+            cooldown = 60,
+            toggle = 'artifact'
+        })
+
+        modifyAbility('mark_of_aluneth', 'cast', genericHasteMod)
+        
+        addHandler('mark_of_aluneth', function()
+            applyDebuff('target', 'mark_of_aluneth', 6)
+        end)
+
+        addAbility('arcane_familiar', {
+            id = 205022,
+            spend = 0,
+            spend_type = 'mana',
+            gcdType = 'spell',
+            cast = 0,
+            cooldown = 10,
+            talent = 'arcane_familiar'
+        })
+
+        addHandler('arcane_familiar', function()
+            applyBuff('arcane_familiar', 3600)
+        end)
+
+        addAbility('supernova', {
+            id = 157980,
+            spend = 0,
+            spend_type = 'mana',
+            gcdType = 'spell',
+            cast = 0,
+            cooldown = 25,
+            talent = 'supernova'
+        })
+
+        addAbility('charged_up', {
+            id = 205032,
+            spend = 0,
+            spend_type = 'mana',
+            gcdType = 'off',
+            cast = 0,
+            cooldown = 40,
+            talent = 'charged_up'
+        })
+
+        addHandler('charged_up', function()
+            gainArcaneCharge(state, 4)
+        end)
+
+        addAbility('nether_tempest', {
+            id = 114923,
+            spend = 0.015,
+            spend_type = 'mana',
+            gcdType = 'off',
+            cast = 0,
+            cooldown = 40,
+            talent = 'nether_tempest'
+        })
+
+        modifyAbility('nether_tempest', 'spend', function(x) return arcanePowerManaCost(state, x) end)
+
+        addHandler('nether_tempest', function()
+            applyDebuff('target', 'nether_tempest', 12)
+        end)
+
+        addAbility('arcane_orb', {
+            id = 153626,
+            spend = 0.01,
+            spend_type = 'mana',
+            gcdType = 'spell',
+            cast = 0,
+            cooldown = 20,
+            talent = 'arcane_orb'
+        })
+
+        modifyAbility('arcane_orb', 'spend', function(x) return arcanePowerManaCost(state, x) end)
+
+        addHandler('arcane_orb', function()
+            gainArcaneCharge(state, 1)
+        end)
+
+        addAbility('counterspell', {
+            id = 2139,
+            spend = 0.02,
+            spend_type = 'mana',
+            gcdType = 'spell',
+            cast = 0,
+            cooldown = 30,
+            toggle = 'interrupts'
+        })
+
+        addAbility( 'time_warp', {
+            id = 80353,
+            spend = 0.04,
+            cast = 0,
+            gcdType = 'off',
+            cooldown = 300,
+            toggle = 'cooldowns',
+            passive = true
+        })
+
+        RegisterEvent( "UNIT_AURA", function(event, unit)
+            --print("UNIT_AURA")
+            if unit == 'player' then
+                i = 0
+                --while i <= 10 do
+                    --print(i)
+                    --local name, rank, icon, count, dispelType, duration, expires, caster, isStealable, nameplateShowPersonal, spellID = UnitAura("player", i)
+                    --print(UnitAura("player", i))
+                    --print(spellID)
+                    --i = i + 1
+                --end
+            end
+        end)
 
         RegisterEvent( "UNIT_SPELLCAST_SUCCEEDED", function(event, unit, spell, _, _, spellID)
+            --print("UNIT_SPELLCAST_SUCCEEDED")
             if unit == 'pet' or unit == 'player' then
                 --local _,_, _, _, _, _, _, _, _, _, buffid = UnitBuff('player', "Icy Veins")
                 --print(buffid)
